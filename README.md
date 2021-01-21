@@ -1,19 +1,4 @@
 # 도서 대여 서비스
- 
-# Table of contents
- 
- - [도서 대여 서비스](#---)
-   - [서비스 시나리오](#서비스-시나리오)  
-   - [분석/설계](#분석설계)
-   - [구현:](#구현-)
-     - [DDD 의 적용](#ddd-의-적용)
-     - [동기식 호출 과 Fallback 처리](#동기식-호출-과-Fallback-처리)
-     - [비동기식 호출 과 Eventual Consistency](#비동기식-호출-과-Eventual-Consistency)
-   - [운영](#운영)
-     - [CI/CD 설정](#cicd설정)
-     - [동기식 호출 / 서킷 브레이킹 / 장애격리](#동기식-호출-서킷-브레이킹-장애격리)
-     - [오토스케일 아웃](#오토스케일-아웃)
-     - [무정지 재배포](#무정지-재배포)
     
 # 서비스 시나리오
  
@@ -25,38 +10,36 @@
  1. 사용자가 예약을 취소할 수 있다.
  1. 도서 예약 취소 시에는 결제가 취소된다.
  1. 사용자가 예약/대여 상태를 확인할 수 있다.
+ 1. 사용자가 Kiosk에서 예약중인 도서를 Self 대여한다. (개인과제)
+ 1. 사용자가 Kiosk에서 대여 중인 도서를 Self 반납한다. (개인과제)
  
  비기능적 요구사항
  1. 트랜잭션
      1. 결제가 되지 않은 경우 예약할 수 없다 (Sync 호출)
+     1. Kiosk에서 대여 시 도서반납 처리가 완료 되지 않은 경우 반납 처리할 수 없다 (Sync 호출) (개인과제)
  1. 장애격리
      1. 도서관리 기능이 수행되지 않더라도 대여/예약은 365일 24시간 받을 수 있어야 한다  Async (event-driven), Eventual Consistency
      1. 결제 시스템이 과중되면 사용자를 잠시동안 받지 않고 예약을 잠시후에 하도록 유도한다  Circuit breaker, fallback
+     1. 도서관리 기능이 수행되지 않더라도 Kiosk 반납은 365일 24시간 받을 수 있어야 한다  Async (event-driven), Eventual Consistency (개인과제)
+     1. 도서관리 시스템이 과중되면 Kiosk 사용자를 잠시동안 받지 않고 Kiosk 대여을 잠시후에 하도록 유도한다  Circuit breaker, fallback (개인과제)
  1. 성능
      1. 사용자는 MyPage에서 본인 예약 및 대여 도서의 목록과 상태를 확인할 수 있어야한다 CQRS
+     1. 사용자는 ReservationList에서 본인 예약 및 대여 도서의 목록과 상태를 확인할 수 있어야한다 CQRS (개인과제)
  
  
  # 분석/설계
  
 ## Event Storming 결과
- * MSAEz 로 모델링한 이벤트스토밍 결과: 
+ * MSAEz 로 모델링한 이벤트스토밍 결과: (팀과제)
  ![image](https://user-images.githubusercontent.com/53402465/104991785-e6c69180-5a62-11eb-9478-19b0582d4201.PNG)  
 
-
-
-## 헥사고날 아키텍처 다이어그램 도출
-    
-![image](https://user-images.githubusercontent.com/53402465/104991783-e5956480-5a62-11eb-91e6-69020468ab61.PNG)
-
-
-    - Chris Richardson, MSA Patterns 참고하여 Inbound adaptor와 Outbound adaptor를 구분함
-    - 호출관계에서 PubSub 과 Req/Resp 를 구분함
-    - 서브 도메인과 바운디드 컨텍스트의 분리:  각 팀의 KPI 별로 아래와 같이 관심 구현 스토리를 나눠가짐
+* MSAEz 로 모델링한 이벤트스토밍 결과: (개인과제)
+ ![image](https://user-images.githubusercontent.com/53402465/104991785-e6c69180-5a62-11eb-9478-19b0582d4201.PNG)  
 
 
 # 구현:
 
-분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 각 BC별로 대변되는 마이크로 서비스들을 스프링부트로 구현하였다. 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다 (각자의 포트넘버는 8081 ~ 808n 이다)
+분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 각 BC별로 대변되는 마이크로 서비스들을 스프링부트로 구현하였다. 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다 (각자의 포트넘버는 8081 ~ 8085 이다)
 
 ```
 cd book
@@ -70,11 +53,14 @@ mvn spring-boot:run
 
 cd rental
 mvn spring-boot:run
+
+cd kiosk
+mvn spring-boot:run
 ```
 
 ## DDD 의 적용
 
-- 각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 book 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하려고 노력했다. 
+- 각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 kiosk 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하려고 노력했다. 
 
 ```
 package library;
@@ -84,16 +70,34 @@ import org.springframework.beans.BeanUtils;
 import java.util.List;
 
 @Entity
-@Table(name="Book_table")
-public class Book {
+@Table(name="Kiosk_table")
+public class Kiosk {
 
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
-    private Long bookId;
+    private Long rentalId;
     private String bookStatus;
+    private Long bookId;
     private Long memberId;
-    private Long rendtalId;
+    private Long kioskNo;
+
+    @PostPersist
+    public void onPostPersist(){
+        SelfRentaled selfRentaled = new SelfRentaled();
+        BeanUtils.copyProperties(this, selfRentaled);
+        selfRentaled.publishAfterCommit();
+    }
+
+    @PostUpdate
+    public void onPostUpdate(){
+
+        if(  bookStatus.equals("kioskreturn")) {
+            SelfReturned selfReturned = new SelfReturned();
+            BeanUtils.copyProperties(this, selfReturned);
+            selfReturned.publishAfterCommit();
+        }
+    }
 
     public Long getId() {
         return id;
@@ -102,12 +106,12 @@ public class Book {
     public void setId(Long id) {
         this.id = id;
     }
-    public Long getBookId() {
-        return bookId;
+    public Long getRentalId() {
+        return rentalId;
     }
 
-    public void setBookId(Long bookId) {
-        this.bookId = bookId;
+    public void setRentalId(Long rentalId) {
+        this.rentalId = rentalId;
     }
     public String getBookStatus() {
         return bookStatus;
@@ -116,6 +120,13 @@ public class Book {
     public void setBookStatus(String bookStatus) {
         this.bookStatus = bookStatus;
     }
+    public Long getBookId() {
+        return bookId;
+    }
+
+    public void setBookId(Long bookId) {
+        this.bookId = bookId;
+    }
     public Long getMemberId() {
         return memberId;
     }
@@ -123,16 +134,14 @@ public class Book {
     public void setMemberId(Long memberId) {
         this.memberId = memberId;
     }
-    public Long getRendtalId() {
-        return rendtalId;
+    public Long getKioskNo() {
+        return kioskNo;
     }
 
-    public void setRendtalId(Long rendtalId) {
-        this.rendtalId = rendtalId;
+    public void setKioskNo(Long kioskNo) {
+        this.kioskNo = kioskNo;
     }
 }
-
-
 ```
 - Entity Pattern 과 Repository Pattern 을 적용하여 JPA 를 통하여 다양한 데이터소스 유형 (RDB or NoSQL) 에 대한 별도의 처리가 없도록 데이터 접근 어댑터를 자동 생성하기 위하여 Spring Data REST 의 RestRepository 를 적용하였다
 ```
@@ -140,7 +149,7 @@ package library;
 
 import org.springframework.data.repository.PagingAndSortingRepository;
 
-public interface BookRepository extends PagingAndSortingRepository<Book, Long>{
+public interface KioskRepository extends PagingAndSortingRepository<Kiosk, Long>{
 }
 ```
 
@@ -247,6 +256,34 @@ http GET http://20.194.7.119:8080/mypages/2
 ```
 
 ![image](https://user-images.githubusercontent.com/75401893/105123049-b8a48880-5b1a-11eb-833e-a44ac80e983a.png)
+
+
+
+# 개인과제 테스트 시나리오
+
+# 도서 예약
+1
+
+# Rental 예약 내역 확인
+2
+
+# kiosk 대여
+
+# kiosk 대여 내역 확인
+
+# kiosk 대여 후 책 상태 확인
+
+# kiosk 대여 후 Rental 상태 확인
+
+# kiosk 반납
+
+# kiosk 반납 내역 확인
+
+# kiosk 반납 후 책 상태 확인
+
+# kiosk 반납 후 Rental 상태 확인
+
+# ReservationList 확인
 
 
 4. Request / Response
