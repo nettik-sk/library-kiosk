@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Date;
 
-//@FeignClient(name="kiosk", url="http://kiosk:8080")
-@FeignClient(name="kiosk", url="${api.kiosk.url}")
+@FeignClient(name="kiosk", url="http://kiosk:8080")
+//@FeignClient(name="kiosk", url="${api.kiosk.url}")
 public interface KioskService {
 
     @RequestMapping(method= RequestMethod.POST, path="/kiosks")
