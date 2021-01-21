@@ -68,4 +68,4 @@ hystrix:
   command:
     # 전역설정 (부하 테스트를 위한 설정 )
     default:
-      execution.isolation.thread.timeoutInMilliseconds: 510
+      execution.isolation.thread.timeoutInMilliseconds: 600
