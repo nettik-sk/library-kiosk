@@ -419,30 +419,12 @@ http http://localhost:8081/rentals memberId=1 bookId=1   #Success
         }
     }
 ```
-- 동기식 호출에서는 호출 시간에 따른 타임 커플링이 발생하며, 도서 관리 시스템이 장애가 나면 kiosk 대여도도 못받는다는 것을 확인:
+- 동기식 호출에서는 호출 시간에 따른 타임 커플링이 발생하며, Kiosk 시스템이 장애가 나면 Self 대여는 못받는다는 것을 확인:
 
 
-## 도서관리 (book) 마이크로 서비스 장애 시
-```
-#주문처리
-http http://localhost:8081/rentals memberId=1 bookId=1  #Fail 
-```
-:
-    ![image](https://user-images.githubusercontent.com/53402465/105120797-3e720500-5b16-11eb-8b2f-d51aea5def12.PNG)
+## kiosk 서비스 장애 시
 
-```
-#결제서비스 재기동
-cd payment
-mvn spring-boot:run
-
-#주문처리
-http http://localhost:8081/rentals memberId=1 bookId=1   #Success
-```
-:
-    ![image](https://user-images.githubusercontent.com/53402465/105120799-3f0a9b80-5b16-11eb-883e-51588b5d6804.PNG)
-
-
-
+    ![1](https://user-images.githubusercontent.com/75237785/105282885-a564ec00-5bf2-11eb-8cc6-1545f0485495.jpg)
 
 
 
@@ -519,6 +501,19 @@ http localhost:8080/rentals     # 모든 주문의 상태가 "reserved"으로 �
 ```
 :
     ![image](https://user-images.githubusercontent.com/53402465/105119394-978c6980-5b13-11eb-8159-65886bee3a81.PNG)
+
+
+# 개인 과제 부분
+
+## kiosk 대여 상태에서 book 서비스를 삭제하고 kiosk 반납을 진행
+![1](https://user-images.githubusercontent.com/75237785/105284000-f1189500-5bf4-11eb-9e35-2a1316d0a7e6.jpg)
+
+## book 서비스 장애 확인
+![2](https://user-images.githubusercontent.com/75237785/105284003-f249c200-5bf4-11eb-9bd3-ef49cb7cfffe.jpg)
+
+## book 서비스 기동 시 정상 반납 처리 확인
+![3](https://user-images.githubusercontent.com/75237785/105284005-f2e25880-5bf4-11eb-9ce0-8374c4db880c.jpg)
+
 
 
 # 운영
