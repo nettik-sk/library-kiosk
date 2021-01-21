@@ -22,8 +22,14 @@ public class Kiosk {
         SelfRentaled selfRentaled = new SelfRentaled();
         BeanUtils.copyProperties(this, selfRentaled);
         selfRentaled.publishAfterCommit();
-
-
+        
+                //부하테스트 시간끌기
+        try {
+            Thread.currentThread().sleep((long) (400 + Math.random() * 220));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
     }
 
     @PostUpdate
