@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: kiosk
-          image: skcc002.azurecr.io/payment:latest
+          image: skcc002.azurecr.io/kiosk:latest
           ports:
             - containerPort: 8080
           readinessProbe:
