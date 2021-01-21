@@ -31,10 +31,10 @@
  
 ## Event Storming 결과
  * MSAEz 로 모델링한 이벤트스토밍 결과: (팀과제)
- ![image](https://user-images.githubusercontent.com/53402465/104991785-e6c69180-5a62-11eb-9478-19b0582d4201.PNG)  
+ ![이벤트스토밍_팀과제](https://user-images.githubusercontent.com/75237785/105280923-51f09f00-5bee-11eb-8f96-7b9ef62c3fd0.jpg)
 
 * MSAEz 로 모델링한 이벤트스토밍 결과: (개인과제)
- ![image](https://user-images.githubusercontent.com/53402465/104991785-e6c69180-5a62-11eb-9478-19b0582d4201.PNG)  
+ ![이벤트스토밍](https://user-images.githubusercontent.com/75237785/105280920-50bf7200-5bee-11eb-878d-bd4f03ad9e20.jpg)
 
 
 # 구현:
@@ -261,34 +261,44 @@ http GET http://20.194.7.119:8080/mypages/2
 
 # 개인과제 테스트 시나리오
 
-# 도서 예약
-1
+## 도서 예약
+![1](https://user-images.githubusercontent.com/75237785/105281034-8c5a3c00-5bee-11eb-8272-46de9ab95b18.jpg)
 
-# Rental 예약 내역 확인
-2
+## Rental 예약 내역 확인
+![2](https://user-images.githubusercontent.com/75237785/105281037-8d8b6900-5bee-11eb-95c7-98771276d78c.jpg)
 
-# kiosk 대여
+## ReservationList 확인
+![3](https://user-images.githubusercontent.com/75237785/105281038-8d8b6900-5bee-11eb-8e98-b161538e7ee1.jpg)
 
-# kiosk 대여 내역 확인
+## kiosk 대여
+![4](https://user-images.githubusercontent.com/75237785/105281039-8e23ff80-5bee-11eb-9098-9830d500f16b.jpg)
 
-# kiosk 대여 후 책 상태 확인
+## kiosk 대여 내역 확인
+![5](https://user-images.githubusercontent.com/75237785/105281041-8ebc9600-5bee-11eb-9389-576f1d2443c6.jpg)
 
-# kiosk 대여 후 Rental 상태 확인
+## kiosk 대여 후 책 상태 확인
+![6](https://user-images.githubusercontent.com/75237785/105281042-8ebc9600-5bee-11eb-90e9-ba84b0cb1aaa.jpg)
 
-# kiosk 반납
+## kiosk 대여 후 Rental 상태 확인
+![7](https://user-images.githubusercontent.com/75237785/105281043-8f552c80-5bee-11eb-98b9-aa66f39fc60c.jpg)
 
-# kiosk 반납 내역 확인
+## kiosk 반납
+![8](https://user-images.githubusercontent.com/75237785/105281044-8f552c80-5bee-11eb-8df2-19386402d48a.jpg)
 
-# kiosk 반납 후 책 상태 확인
+## kiosk 반납 내역 확인
+![9](https://user-images.githubusercontent.com/75237785/105281046-8fedc300-5bee-11eb-919c-c7d6b8d71c44.jpg)
 
-# kiosk 반납 후 Rental 상태 확인
+## kiosk 반납 후 책 상태 확인
+![10](https://user-images.githubusercontent.com/75237785/105281047-90865980-5bee-11eb-8903-61b3fa96fb97.jpg)
 
-# ReservationList 확인
+## kiosk 반납 후 Rental 상태 확인
+![11](https://user-images.githubusercontent.com/75237785/105281048-90865980-5bee-11eb-9c8a-80d1437765d3.jpg)
+
 
 
 4. Request / Response
 
-```
+
 
 ## 동기식 호출 과 Fallback 처리
 
@@ -337,7 +347,7 @@ public interface PaymentService {
 
 
 # 결제 (payment) 서비스를 잠시 내려놓음
-
+```
 #주문처리
 http http://localhost:8081/rentals memberId=1 bookId=1  #Fail 
 ```
@@ -355,7 +365,84 @@ http http://localhost:8081/rentals memberId=1 bookId=1   #Success
 :
     ![image](https://user-images.githubusercontent.com/53402465/105120799-3f0a9b80-5b16-11eb-883e-51588b5d6804.PNG)
 
-- 또한 과도한 요청시에 서비스 장애가 도미노 처럼 벌어질 수 있다. (서킷브레이커, 폴백 처리는 운영단계에서 설명한다.)
+
+# 개인 과제 부분
+
+```
+# Rental.java
+
+
+    @PostUpdate
+    public void onPostUpdate(){
+        if (this.reqState.equals("cancel") ) {
+            Cancelled cancelled = new Cancelled();
+            BeanUtils.copyProperties(this, cancelled);
+            cancelled.publishAfterCommit();
+            System.out.println("cancelled" + cancelled.toJson());
+        }  else if (this.reqState.equals("rental") ) {
+            Rentaled rentaled = new Rentaled();
+            BeanUtils.copyProperties(this, rentaled);
+            rentaled.publishAfterCommit();
+            System.out.println("rentaled" + rentaled.toJson());
+        }  else if (this.reqState.equals("return") ) {
+            Returned returned = new Returned();
+            BeanUtils.copyProperties(this, returned);
+            returned.publishAfterCommit();
+            System.out.println("returned" + returned.toJson());
+        }  else if (this.reqState.equals("kioskrental") ) {
+            KioskRentaled kioskRentaled = new KioskRentaled();
+            BeanUtils.copyProperties(this, kioskRentaled);
+            kioskRentaled.publishAfterCommit();
+
+            //Following code causes dependency to external APIs
+            // it is NOT A GOOD PRACTICE. instead, Event-Policy mapping is recommended.
+
+            library.external.Kiosk kiosk = new library.external.Kiosk();
+            // mappings goes here
+            kiosk.setId(this.id);
+            kiosk.setRentalId(this.id);
+            kiosk.setMemberId(this.memberId);
+            kiosk.setBookId(this.bookId);
+            kiosk.setBookStatus("kioskrental");
+            kiosk.setKioskNo(this.kioskNo);
+            kiosk.setKioskId(this.kioskId);
+
+            RentalApplication.applicationContext.getBean(library.external.KioskService.class)
+                    .selfRental(kiosk);
+
+            System.out.println("kioskRentaled" + kioskRentaled.toJson());
+        }  else if (this.reqState.equals("kioskreturn") ) {
+            KioskReturned kioskReturned = new KioskReturned();
+            BeanUtils.copyProperties(this, kioskReturned);
+            kioskReturned.publishAfterCommit();
+            System.out.println("kioskReturned" + kioskReturned.toJson());
+        }
+    }
+```
+- 동기식 호출에서는 호출 시간에 따른 타임 커플링이 발생하며, 도서 관리 시스템이 장애가 나면 kiosk 대여도도 못받는다는 것을 확인:
+
+
+## 도서관리 (book) 마이크로 서비스 장애 시
+```
+#주문처리
+http http://localhost:8081/rentals memberId=1 bookId=1  #Fail 
+```
+:
+    ![image](https://user-images.githubusercontent.com/53402465/105120797-3e720500-5b16-11eb-8b2f-d51aea5def12.PNG)
+
+```
+#결제서비스 재기동
+cd payment
+mvn spring-boot:run
+
+#주문처리
+http http://localhost:8081/rentals memberId=1 bookId=1   #Success
+```
+:
+    ![image](https://user-images.githubusercontent.com/53402465/105120799-3f0a9b80-5b16-11eb-883e-51588b5d6804.PNG)
+
+
+
 
 
 
