@@ -526,8 +526,7 @@ http localhost:8080/rentals     # 모든 주문의 상태가 "reserved"으로 �
 
 6. Deploy / Pipeline
 
-![1](https://user-images.githubusercontent.com/75237785/105319507-4ca04e00-5c08-11eb-9613-25940eb55d9c.jpg)
-
+![1](https://user-images.githubusercontent.com/75237785/105321230-883c1780-5c0a-11eb-89e3-0bb0de8804a6.jpg)
 
 
 
@@ -628,6 +627,7 @@ siege -c200 -t60S -v --content-type "application/json" 'http://rental:8080/renta
 
 
 
+![1](https://user-images.githubusercontent.com/75237785/105321271-9722ca00-5c0a-11eb-8834-b43c2b17f792.jpg)
 
 
 8. Autoscale (HPA)
@@ -688,7 +688,7 @@ kubectl autoscale deploy kiosk --min=1 --max=10 --cpu-percent=15
 
 - HPA에서 CPU 사용율이 모니터링 되고 부하 정도에따라 Replicaset이 10개까지 늘어나는 것을 확인할 수 있다
 
-
+![화면 캡처 2021-01-21 165802](https://user-images.githubusercontent.com/75237785/105321245-8eca8f00-5c0a-11eb-9c40-952f3abe304b.jpg)
 
 9. Zero-downtime deploy (readiness probe)
 ## 무정지 재배포
